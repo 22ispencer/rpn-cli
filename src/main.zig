@@ -11,8 +11,8 @@ const Color = struct {
         cyan = 6,
         white = 7,
         default = 9,
-    },
-    bright: bool,
+    } = .default,
+    bright: bool = false,
 
     pub const default: Color = .{
         .value = .default,
@@ -68,7 +68,7 @@ fn repl(alloc: std.mem.Allocator) !void {
     var writer = stdout.writer();
     var reader = stdin.reader();
 
-    const prompt = try FormattedText.init("> ", Style.init(.{ .bright = false, .value = .green }, null, true, false), alloc);
+    const prompt = try FormattedText.init("> ", .{ .fg_color = .{ .value = .green }, .bold = true }, alloc);
     defer prompt.deinit();
 
     var input = std.ArrayList(u8).init(alloc);
