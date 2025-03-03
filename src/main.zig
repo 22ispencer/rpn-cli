@@ -21,21 +21,12 @@ const Color = struct {
 };
 
 const Style = struct {
-    fg_color: Color,
-    bg_color: Color,
-    bold: bool,
-    underlined: bool,
+    fg_color: Color = Color.default,
+    bg_color: Color = Color.default,
+    bold: bool = false,
+    underlined: bool = false,
 
     pub const reset_str = "\x1b[22;24;39;49m";
-
-    pub fn init(fg_color: ?Color, bg_color: ?Color, bold: bool, underlined: bool) Style {
-        return Style{
-            .fg_color = fg_color orelse Color.default,
-            .bg_color = bg_color orelse Color.default,
-            .bold = bold,
-            .underlined = underlined,
-        };
-    }
 };
 
 const FormattedText = struct {
