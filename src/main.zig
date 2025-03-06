@@ -26,7 +26,7 @@ const Style = struct {
     bold: bool = false,
     underlined: bool = false,
 
-    pub const reset_str = "\x1b[22;24;39;49m";
+    pub const reset_str = "\x1b[0m";
 };
 
 const FormattedText = struct {
@@ -57,6 +57,113 @@ const FormattedText = struct {
         try writer.writeAll(text);
         try writer.writeAll(Style.reset_str);
         return styled_string;
+    }
+};
+
+pub fn LinkedList(comptime T: type) type {
+    return struct {
+        const Self = @This();
+
+        pub const Node = struct {
+            next: ?*Node = null,
+            data: T,
+
+            pub const Data = T;
+        };
+
+        first: ?*Node = null,
+        allocator: std.mem.Allocator,
+
+        pub fn init(allocator: std.mem.Allocator) Self {
+            return .{ .allocator = allocator };
+        }
+
+        /// Semantic alias of `self.clear`
+        pub fn deinit(self: *Self) void {
+            self.clear();
+        }
+
+        /// Clears the list while freeing memory with `self.allocator.destroy`
+        pub fn clear(self: *Self) void {
+            while (self.first) {
+                const first = self.popFirst() orelse unreachable;
+                self.first = first.next;
+                self.allocator.destroy(first);
+            }
+        }
+
+        /// Appends data to the list using `self.allocator.create`
+        pub fn prepend(self: *Self, data: T) !void {
+            const first = self.first;
+            const new_node = try self.allocator.create(Node);
+            new_node.data = data;
+            new_node.next = first;
+            self.first = new_node;
+        }
+
+        /// Removes the first `Node` from the list, or null if the list is empty.
+        /// Make sure to call `self.allocator.destroy` on the pointer to free memory.
+        pub fn popFirst(self: *Self) ?*Node {
+            const first = self.first orelse return null;
+            const next = first.next;
+            self.first = next;
+            return first;
+        }
+    };
+}
+
+const Stack = struct {
+    const T = f128;
+    data: LinkedList(T),
+
+    pub fn init(allocator: std.mem.Allocator) Stack {
+        return .{
+            .data = LinkedList(T).init(allocator),
+        };
+    }
+
+    pub fn deinit(self: *Stack) void {
+        self.data.deinit();
+    }
+
+    const StackOperationError = error{
+        EmptyStack,
+        InvalidOperandCount,
+    };
+
+    // pub fn processRPNString(self: *Stack, string: []u8) !void {
+    //     var chunk_iterator = std.mem.splitSequence(u8, string, " ");
+    //     while (try chunk_iterator.next()) |chunk| {
+    //         var bufcursor: usize = 0;
+    //         var numBuf: [128]u8 = undefined;
+    //         var hasDecimal = false;
+    //         var hasExponent = false;
+    //         for (0..chunk.len) |i| {
+    //             const char: u8 = chunk[i];
+    //         }
+    //     }
+    // }
+
+    /// Pops the top value on the stack and adds it to the next value
+    pub fn add(self: *Stack) !void {
+        if (self.data.first == null or self.data.first.?.next == null) {
+            return StackOperationError.InvalidOperandCount;
+        }
+
+        const first = self.data.popFirst() orelse unreachable;
+        defer self.data.allocator.destroy(first);
+
+        var next = first.next orelse unreachable;
+
+        next.data += first.data;
+    }
+
+    /// Adds `value` to the top value in the stack
+    pub fn addValue(self: *Stack, value: T) !void {
+        if (self.data.first == null) {
+            return StackOperationError.EmptyStack;
+        }
+        self.data.first.?.data += value;
     }
 };
 
